@@ -34,7 +34,7 @@ type unsafe_component =
   | Unsafe_typext
 
 type unsafe_info =
-  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t }
+  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t; path: Path.t }
   | Unnamed
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list
@@ -230,19 +230,19 @@ let undefined_location loc =
 exception Initialization_failure of unsafe_info
 
 let init_shape id modl =
-  let rec init_shape_mod subid loc env mty =
+  let rec init_shape_mod path subid loc env mty =
     match Mtype.scrape env mty with
       Mty_ident _
     | Mty_alias _ ->
         raise (Initialization_failure
-                (Unsafe {reason=Unsafe_module_binding;loc;subid}))
+                (Unsafe {reason=Unsafe_module_binding;loc;subid; path}))
     | Mty_signature sg ->
-        Const_block(0, [Const_block(0, init_shape_struct env sg)])
+        Const_block(0, [Const_block(0, init_shape_struct path env sg)])
     | Mty_functor _ ->
         (* can we do better? *)
         raise (Initialization_failure
-                (Unsafe {reason=Unsafe_functor;loc;subid}))
-  and init_shape_struct env sg =
+                (Unsafe {reason=Unsafe_functor;loc;subid; path}))
+  and init_shape_struct path env sg =
     match sg with
       [] -> []
     | Sig_value(subid, {val_kind=Val_reg; val_type=ty; val_loc=loc},_) :: rem ->
@@ -254,37 +254,37 @@ let init_shape id modl =
               const_int 1 (* camlinternalMod.Lazy *)
           | _ ->
               let not_a_function =
-                Unsafe {reason=Unsafe_non_function; loc; subid }
+                Unsafe {reason=Unsafe_non_function; loc; subid; path }
               in
               raise (Initialization_failure not_a_function) in
-        init_v :: init_shape_struct env rem
+        init_v :: init_shape_struct path env rem
     | Sig_value(_, {val_kind=Val_prim _}, _) :: rem ->
-        init_shape_struct env rem
+        init_shape_struct path env rem
     | Sig_value _ :: _rem ->
         assert false
     | Sig_type(id, tdecl, _, _) :: rem ->
-        init_shape_struct (Env.add_type ~check:false id tdecl env) rem
+        init_shape_struct path (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext (subid, {ext_loc=loc},_,_) :: _ ->
-        raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid}))
+        raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid;path}))
     | Sig_module(id, Mp_present, md, _, _) :: rem ->
-        init_shape_mod id md.md_loc env md.md_type ::
-        init_shape_struct (Env.add_module_declaration ~check:false
+        init_shape_mod (Pdot(path, Ident.name id)) id md.md_loc env md.md_type ::
+        init_shape_struct path (Env.add_module_declaration ~check:false
                              id Mp_present md env) rem
     | Sig_module(id, Mp_absent, md, _, _) :: rem ->
         init_shape_struct
-          (Env.add_module_declaration ~check:false
+          path (Env.add_module_declaration ~check:false
                              id Mp_absent md env) rem
     | Sig_modtype(id, minfo, _) :: rem ->
-        init_shape_struct (Env.add_modtype id minfo env) rem
+        init_shape_struct path (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
         const_int 2 (* camlinternalMod.Class *)
-        :: init_shape_struct env rem
+        :: init_shape_struct path env rem
     | Sig_class_type _ :: rem ->
-        init_shape_struct env rem
+        init_shape_struct path env rem
   in
   try
     Ok(undefined_location modl.mod_loc,
-       Lconst(init_shape_mod id modl.mod_loc modl.mod_env modl.mod_type))
+       Lconst(init_shape_mod (Path.Pident id) id modl.mod_loc modl.mod_env modl.mod_type))
   with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
@@ -1672,11 +1672,11 @@ let print_cycle ppf cycle =
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
   | Unnamed -> assert false (* can't be part of a cycle. *)
-  | Unsafe {reason;loc;subid} ->
+  | Unsafe {reason;loc;path} ->
       let print fmt =
         let printer = doc_printf fmt
             Style.inline_code (Ident.name id)
-            Style.inline_code (Ident.name subid) in
+            Style.inline_code (Path.name path ^ "." ^ Ident.name id) in
         Location.mkloc printer loc in
       match reason with
       | Unsafe_module_binding ->
