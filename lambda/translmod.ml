@@ -34,7 +34,12 @@ type unsafe_component =
   | Unsafe_typext
 
 type unsafe_info =
-  | Unsafe of { reason:unsafe_component; loc:Location.t; subid:Ident.t; path: Path.t }
+  | Unsafe of {
+    reason:unsafe_component;
+    loc:Location.t;
+    subid:Ident.t;
+    path: Path.t
+    }
   | Unnamed
 type error =
   Circular_dependency of (Ident.t * unsafe_info) list
@@ -265,9 +270,12 @@ let init_shape id modl =
     | Sig_type(id, tdecl, _, _) :: rem ->
         init_shape_struct path (Env.add_type ~check:false id tdecl env) rem
     | Sig_typext (subid, {ext_loc=loc},_,_) :: _ ->
-        raise (Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid;path}))
+        raise (
+          Initialization_failure (Unsafe {reason=Unsafe_typext;loc;subid;path})
+        )
     | Sig_module(id, Mp_present, md, _, _) :: rem ->
-        init_shape_mod (Pdot(path, Ident.name id)) id md.md_loc env md.md_type ::
+        init_shape_mod (
+          Pdot(path, Ident.name id)) id md.md_loc env md.md_type ::
         init_shape_struct path (Env.add_module_declaration ~check:false
                              id Mp_present md env) rem
     | Sig_module(id, Mp_absent, md, _, _) :: rem ->
@@ -284,7 +292,11 @@ let init_shape id modl =
   in
   try
     Ok(undefined_location modl.mod_loc,
-       Lconst(init_shape_mod (Path.Pident id) id modl.mod_loc modl.mod_env modl.mod_type))
+      Lconst(
+        init_shape_mod (
+          Path.Pident id) id modl.mod_loc modl.mod_env modl.mod_type
+        )
+      )
   with Initialization_failure reason -> Result.Error(reason)
 
 (* Reorder bindings to honor dependencies.  *)
