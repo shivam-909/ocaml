@@ -1672,11 +1672,11 @@ let print_cycle ppf cycle =
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
   | Unnamed -> assert false (* can't be part of a cycle. *)
-  | Unsafe {reason;loc;path} ->
+  | Unsafe {reason;loc;subid;path} ->
       let print fmt =
         let printer = doc_printf fmt
             Style.inline_code (Ident.name id)
-            Style.inline_code (Path.name path ^ "." ^ Ident.name id) in
+            Style.inline_code (Path.name path ^ "." ^ Ident.name subid) in
         Location.mkloc printer loc in
       match reason with
       | Unsafe_module_binding ->
