@@ -121,7 +121,7 @@ Working version
   (Florian Angeletti, review by Richard Eisenberg)
 
 - #12628: Improved error message for unsafe values print out the full path for
-  the value that is unsafe when they are detected during the compilation of 
+  the value that is unsafe when they are detected during the compilation of
   recursive modules.
   (Shivam Acharya)
 
