@@ -1689,8 +1689,8 @@ let reason_to_message = function
 
 let get_name reason subid path =
   match reason with
-  | Unsafe_non_function -> Path.name path ^ "." ^ Ident.name subid
-  | _ -> Ident.name subid
+  | Unsafe_non_function | Unsafe_typext -> Path.name path ^ "." ^ Ident.name subid
+  | Unsafe_module_binding | Unsafe_functor -> Path.name path
 
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
@@ -1700,7 +1700,7 @@ let explanation_submsg (id, unsafe_info) =
       let name_to_print = get_name reason subid path in
       let message = reason_to_message reason in
       let printer = doc_printf 
-        "Module %a %s, %a."
+        "Module %a %s, %a ."
         Style.inline_code (Ident.name id)
         message
         Style.inline_code name_to_print
