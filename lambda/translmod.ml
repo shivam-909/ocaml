@@ -34,7 +34,7 @@ type unsafe_component =
   | Unsafe_typext
 
 type unsafe_info =
-  | Unsafe of {
+  | Unsafe of { 
     reason:unsafe_component;
     loc:Location.t;
     subid:Ident.t;
@@ -1681,22 +1681,31 @@ let print_cycle ppf cycle =
     (Ident.name @@ fst @@ List.hd cycle)
 (* we repeat the first element to make the cycle more apparent *)
 
+let reason_to_message = function
+  | Unsafe_module_binding -> "defines an unsafe module"
+  | Unsafe_functor -> "defines an unsafe functor"
+  | Unsafe_typext -> "defines an unsafe extension constructor"
+  | Unsafe_non_function -> "defines an unsafe value"
+
+let get_name reason subid path =
+  match reason with
+  | Unsafe_non_function -> Path.name path ^ "." ^ Ident.name subid
+  | _ -> Ident.name subid
+
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
-  | Unnamed -> assert false (* can't be part of a cycle. *)
-  | Unsafe {reason;loc;subid;path} ->
-      let print fmt =
-        let printer = doc_printf fmt
-            Style.inline_code (Ident.name id)
-            Style.inline_code (Path.name path ^ "." ^ Ident.name subid) in
-        Location.mkloc printer loc in
-      match reason with
-      | Unsafe_module_binding ->
-          print "Module %a defines an unsafe module, %a ."
-      | Unsafe_functor -> print "Module %a defines an unsafe functor, %a ."
-      | Unsafe_typext ->
-          print "Module %a defines an unsafe extension constructor, %a ."
-      | Unsafe_non_function -> print "Module %a defines an unsafe value, %a ."
+  | Unnamed -> 
+      assert false (* can't be part of a cycle *)
+  | Unsafe {reason; loc; subid; path} ->
+      let name_to_print = get_name reason subid path in
+      let message = reason_to_message reason in
+      let printer = doc_printf 
+        "Module %a %s, %a."
+        Style.inline_code (Ident.name id)
+        message
+        Style.inline_code name_to_print
+      in
+      Location.mkloc printer loc
 
 let report_error loc = function
   | Circular_dependency cycle ->

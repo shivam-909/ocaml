@@ -74,7 +74,7 @@ Error: Cannot safely evaluate the definition of the following cycle
 Line 2, characters 2-41:
 2 |   module F: functor(X:sig end) -> sig end
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  Module "A" defines an unsafe functor, "A.F.F" .
+  Module "A" defines an unsafe functor, "A.F" .
 Line 8, characters 11-26:
 8 | and B: sig val value: unit end = struct let value = A.f () end
                ^^^^^^^^^^^^^^^
@@ -104,7 +104,7 @@ Error: Cannot safely evaluate the definition of the following cycle
 Line 3, characters 4-17:
 3 |     module M: X.t
         ^^^^^^^^^^^^^
-  Module "A" defines an unsafe module, "A.M.M" .
+  Module "A" defines an unsafe module, "A.M" .
 Line 9, characters 13-28:
 9 |   and B: sig val value: unit end = struct let value  = A.f () end
                  ^^^^^^^^^^^^^^^
