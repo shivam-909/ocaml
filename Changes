@@ -123,7 +123,7 @@ Working version
 - #13587: Enable native backend on x86_64 GNU/Hurd.
   (Samuel Thibault, review by Antonin Décimo, Sébastien Hinderer and Miod
    Vallat)
-   
+
 - #12628: Improved error message for unsafe values print out the full path for
   the value that is unsafe when they are detected during the compilation of
   recursive modules.

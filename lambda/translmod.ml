@@ -34,7 +34,7 @@ type unsafe_component =
   | Unsafe_typext
 
 type unsafe_info =
-  | Unsafe of { 
+  | Unsafe of {
     reason:unsafe_component;
     loc:Location.t;
     subid:Ident.t;
@@ -1689,17 +1689,18 @@ let reason_to_message = function
 
 let get_name reason subid path =
   match reason with
-  | Unsafe_non_function | Unsafe_typext -> Path.name path ^ "." ^ Ident.name subid
+  | Unsafe_non_function | Unsafe_typext ->
+      Path.name path ^ "." ^ Ident.name subid
   | Unsafe_module_binding | Unsafe_functor -> Path.name path
 
 let explanation_submsg (id, unsafe_info) =
   match unsafe_info with
-  | Unnamed -> 
+  | Unnamed ->
       assert false (* can't be part of a cycle *)
   | Unsafe {reason; loc; subid; path} ->
       let name_to_print = get_name reason subid path in
       let message = reason_to_message reason in
-      let printer = doc_printf 
+      let printer = doc_printf
         "Module %a %s, %a ."
         Style.inline_code (Ident.name id)
         message
